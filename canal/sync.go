@@ -258,6 +258,7 @@ func (c *SyncClient) syncLoop() {
 				}
 			case EventData:
 				// todo: queue
+				fmt.Println("收到数据: ", v)
 				/*
 					if err := queue.PushBack(&v); err != nil {
 						c.runaway(fmt.Sprintf("queue PushBack err:%+v", err))

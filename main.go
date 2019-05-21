@@ -5,13 +5,16 @@ import (
 	"os"
 
 	"datariver/boot"
+	"datariver/canal"
 )
 
 func main() {
-	err := boot.Init()
+	err := boot.InitAll()
 	if err != nil {
-		fmt.Println("初始化失败: ", err.Error())
+		fmt.Println("启动失败: ", err.Error())
 		os.Exit(1)
 	}
 
+	_, err = canal.NewMetaInfo("test")
+	fmt.Println(err)
 }

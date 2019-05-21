@@ -1,0 +1,35 @@
+{
+    "SourceConfig":{
+        "MysqlConn":"rep_user:rep_user@tcp(localhost:3306)",
+        "SyncAll":false,
+	"RebootSeconds":300,
+        "Sources":[
+            {
+                "Schema":"mall_db",
+                "Tables":[
+                    {
+                        "Table":"goods"
+                    },
+                    {
+                        "Table":"package",
+                        "Topic":"mytopic",
+                        "Key":"usr_id"
+                    }
+                ]
+            },
+            {
+                "Schema":"social_db",
+                "Tables":[
+                ]
+            }
+        ]
+    },
+    "BrokerConfig":{
+        "LogDir":"./log/",
+        "LogFile":"binlogbroker.log",
+        "EtcdAddr":["http://etcd.in.codoon.com:2379"],
+        "KafkaAddr":["localhost:9092"],
+        "RPCListen":":8846"
+        }
+    }
+}

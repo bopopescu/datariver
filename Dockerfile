@@ -17,6 +17,7 @@ ENV LOG_PATH /var/log/medlinker/$APP_NAME
 
 # 执行入口文件添加
 ADD ./main $APP_PATH/
+ADD ./datariver.conf.json $APP_PATH/
 ADD ./docfile/dockerfiles/*.sh /bin/
 RUN chmod +x /bin/*.sh
 

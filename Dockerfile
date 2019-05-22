@@ -1,5 +1,5 @@
 # registry.cn-hangzhou.aliyuncs.com/medlinker/datariver
-FROM registry-vpc.cn-hangzhou.aliyuncs.com/datariver/alpine:3.8
+FROM registry-vpc.cn-hangzhou.aliyuncs.com/medlinker/alpine:3.8
 
 LABEL maintainer="guoqiang@medlinker.com"
 

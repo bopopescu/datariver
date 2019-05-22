@@ -7,7 +7,8 @@ import (
 	"github.com/siddontang/go-mysql/canal"
 	"github.com/siddontang/go-mysql/mysql"
 	"github.com/siddontang/go-mysql/replication"
-	//"github.com/siddontang/go-mysql/schema"
+
+	"datariver/global"
 )
 
 type posSaver struct {
@@ -61,9 +62,9 @@ func hack_string(b []byte) (s string) {
 
 func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 	rule, ok := h.c.getFilterInfo(e.Table.Schema, e.Table.Name)
-	//log.Debug("%+v %+v.%+v", e.Action, e.Table.Schema, e.Table.Name)
+	global.Logger.Debug("%+v %+v.%+v", e.Action, e.Table.Schema, e.Table.Name)
 	if !ok {
-		//log.Debug("%+v.%+v filtered, continue", e.Table.Schema, e.Table.Name)
+		global.Logger.Debug("%+v.%+v filtered, continue", e.Table.Schema, e.Table.Name)
 		return nil
 	}
 	data := EventData{}
@@ -77,17 +78,18 @@ func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 			hit_index = true
 		}
 		data.Columns = append(data.Columns, col.Name)
-		//if col.Type == schema.TYPE_TEXT {
-		// todo: disable magic number
-		if col.Type == 12 {
-			for i, row := range e.Rows {
-				if index < len(row) {
-					if t, ok := e.Rows[i][index].([]byte); ok {
-						e.Rows[i][index] = hack_string(t)
+		/*
+			// do not need to process TYPE_TEXT
+			if col.Type == 12 {
+				for i, row := range e.Rows {
+					if index < len(row) {
+						if t, ok := e.Rows[i][index].([]byte); ok {
+							e.Rows[i][index] = hack_string(t)
+						}
 					}
 				}
 			}
-		}
+		*/
 	}
 	//should not come here
 	if rule.KeyIndex >= len(data.Columns) || rule.KeyIndex == default_key_index {
@@ -95,7 +97,7 @@ func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 	}
 	data.Owner = *rule
 	data.Rows = e.Rows
-	//log.Debug("data:%+v", data)
+	global.Logger.Debug("data:%+v", data)
 	h.c.syncCh <- data
 	return nil
 }

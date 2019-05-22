@@ -11,15 +11,15 @@ import (
 	"github.com/siddontang/go-mysql/mysql"
 
 	"common/ha"
-	"datariver/boot"
+	"datariver/global"
 )
 
 func NewMetaInfo(group string) (*MetaInfo, error) {
 	m := &MetaInfo{}
-	key := fmt.Sprintf("/position/%s/%s", boot.SERVERNAME, group)
-	resp, err := boot.GBusiEtcdClient.Api.Get(context.Background(), key)
+	key := fmt.Sprintf("/position/%s/%s", global.SERVERNAME, group)
+	resp, err := global.GBusiEtcdClient.Api.Get(context.Background(), key)
 	if err != nil {
-		//log.Info("get meta from etcd key:%v, err:%v", key, err)
+		global.Logger.Error("get meta from etcd key:%v, err:%v", key, err)
 		return nil, err
 	}
 	if len(resp.Kvs) == 0 {
@@ -59,8 +59,8 @@ func (p *MetaInfo) Save(pos mysql.Position) error {
 	if err != nil {
 		return err
 	}
-	key := fmt.Sprintf("/position/%s/%s", boot.SERVERNAME, p.Group)
-	if _, err = boot.GConfigEtcdClient.Api.Put(context.Background(), key, string(d)); err != nil {
+	key := fmt.Sprintf("/position/%s/%s", global.SERVERNAME, p.Group)
+	if _, err = global.GBusiEtcdClient.Api.Put(context.Background(), key, string(d)); err != nil {
 		return err
 	}
 

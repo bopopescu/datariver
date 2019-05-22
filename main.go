@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"datariver/boot"
-	"datariver/canal"
 )
 
 func main() {
@@ -15,6 +15,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = canal.NewMetaInfo("test")
-	fmt.Println(err)
+	for true {
+		time.Sleep(time.Second * 10)
+	}
 }

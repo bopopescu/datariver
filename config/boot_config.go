@@ -2,6 +2,8 @@ package config
 
 import ()
 
+var GConfig ServerConfig = ServerConfig{}
+
 type TopicInfo struct {
 	// table name
 	Table string

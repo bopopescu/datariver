@@ -17,7 +17,7 @@ import (
 
 	"common/ha"
 	"datariver/config"
-	//"yunwa.com/datariver/queue"
+	"datariver/global"
 )
 
 const (
@@ -46,6 +46,7 @@ type SyncClient struct {
 	sourceLock    sync.RWMutex
 	isClose       bool
 	LastMeta      *MetaInfo
+	DataHolder    Holder
 }
 
 func NewSyncClient(cfg *config.ServerConfig) (*SyncClient, error) {
@@ -58,26 +59,25 @@ func NewSyncClient(cfg *config.ServerConfig) (*SyncClient, error) {
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
 	var err error
-	/*
-		// todo: 初始化queue
-		if err = queue.Init(cfg.BrokerConfig.KafkaAddr); err != nil {
-			return nil, err
-		}
-	*/
-	if err = c.newCanal(); err != nil {
+	if err = InitQueue(cfg.BrokerConfig.KafkaAddr); err != nil {
 		return nil, err
 	}
+	// todo: 封装holder
+	//c.DataHolder = defaultQueue
+	if err = c.newCanal(); err != nil {
+		return nil, errors.Wrap(err, "初始化canal失败")
+	}
 	if err = c.loadPositionInfo(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "加载位置信息失败")
 	}
 
 	if err = c.parseSourceRule(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "解析规则失败")
 	}
 
 	// binlog must be in "row" mode
 	if err = c.canal.CheckBinlogRowImage("FULL"); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "检查binlog格式未通过")
 	}
 
 	return c, nil
@@ -85,25 +85,23 @@ func NewSyncClient(cfg *config.ServerConfig) (*SyncClient, error) {
 
 func (r *SyncClient) Close() {
 	r.isClose = true
-	//log.Info("closing SyncClient")
+	global.Logger.Info("closing SyncClient")
 
 	r.cancel()
-	//log.Info("closing SyncClient cancel ")
+	global.Logger.Info("closing SyncClient cancel ")
 
 	r.canal.Close()
-	//log.Info("closing SyncClient canal.Close ")
+	global.Logger.Info("closing SyncClient canal.Close ")
 
 	r.master.Close()
-	//log.Info("closing SyncClient master.Close ")
-	//log.Info("closing SyncClient wg.Wait Begin")
+	global.Logger.Info("closing SyncClient master.Close ")
+	global.Logger.Info("closing SyncClient wg.Wait Begin")
 	r.wg.Wait()
-	//log.Info("closing SyncClient wg.Wait End ")
-	//log.Info("begin CloseProducer")
+	global.Logger.Info("closing SyncClient wg.Wait End ")
+	global.Logger.Info("begin CloseProducer")
 
-	// todo: queue
-	//err := queue.CloseProducer()
-
-	//log.Info("end CloseProducer err:", err)
+	err := CloseProducer()
+	global.Logger.Error("end CloseProducer err:", err)
 }
 
 func (c *SyncClient) RoleSwitch() chan<- ha.RoleType {
@@ -116,7 +114,7 @@ func (c *SyncClient) loadPositionInfo() error {
 	for loop := true; loop; loop = false {
 		c.master, err = NewMetaInfo(c.cfg.BrokerConfig.Group)
 		if err != nil {
-			//log.Info("Get NewMetaInfo with err:%+v, refresh from mysql server:%+v", err, c.cfg.SourceConfig.MysqlConn)
+			global.Logger.Info("Get NewMetaInfo with err:%+v, refresh from mysql server:%+v", err, c.cfg.SourceConfig.MysqlConn)
 			res := &mysql.Result{}
 			if res, err = c.canal.Execute(sql); err != nil {
 				break
@@ -138,7 +136,7 @@ func (c *SyncClient) loadPositionInfo() error {
 		}
 	}
 
-	//log.Info("[-]SyncClient loadPositionInfo, name:%+v, pos:%+v, err:%+v ", c.master.Name, c.master.Pos, err)
+	global.Logger.Info("[-]SyncClient loadPositionInfo, name:%+v, pos:%+v, err:%+v ", c.master.Name, c.master.Pos, err)
 
 	return err
 }
@@ -161,6 +159,8 @@ func (c *SyncClient) newCanal() error {
 	cfg.Password = c.cfg.SourceConfig.DBConfig.Passwd
 	cfg.Flavor = "mysql"
 
+	cfg.Dump.ExecutionPath = ""
+
 	if server_id > 0 {
 		cfg.ServerID = server_id
 	} else {
@@ -172,14 +172,15 @@ func (c *SyncClient) newCanal() error {
 
 	var err error
 	if c.canal, err = canal.NewCanal(cfg); err != nil {
-		//log.Info("NewCanal err:%+v", err)
-		return err
+		global.Logger.Error("NewCanal err:%+v", err)
+		return errors.Wrap(err, "调用底层NewCanal失败")
 	}
 	c.canal.SetEventHandler(&eventHandler{c})
 	return err
 }
 
 func (c *SyncClient) Start() error {
+	fmt.Println("---> ", c.wg)
 	c.wg.Add(1)
 	go c.syncLoop()
 
@@ -239,7 +240,7 @@ func (c *SyncClient) syncLoop() {
 	for {
 		if c.isClose {
 			time.Sleep(2 * time.Second)
-			//log.Info("SyncClient is Closing, waiting exit ")
+			global.Logger.Info("SyncClient is Closing, waiting exit ")
 			continue
 		}
 		needSavePos = false
@@ -259,28 +260,26 @@ func (c *SyncClient) syncLoop() {
 			case EventData:
 				// todo: queue
 				fmt.Println("收到数据: ", v)
-				/*
-					if err := queue.PushBack(&v); err != nil {
-						c.runaway(fmt.Sprintf("queue PushBack err:%+v", err))
-						return
-					}
-				*/
+				if err := PushBack(&v); err != nil {
+					c.runaway(fmt.Sprintf("queue PushBack err:%+v", err))
+					return
+				}
 			default:
-				//log.Info("get syncCh %+v", v)
+				global.Logger.Info("get syncCh %+v", v)
 			}
 		case <-c.ctx.Done():
 			return
 
 		case e := <-c.errCh:
-			//log.Info("canal err pos:%+v, err:%+v", pos, e)
+			global.Logger.Error("canal err pos:%+v, err:%+v", pos, e)
 			c.runaway(e.Error())
 			return
 		}
 		if needSavePos {
 			if err := c.master.Save(pos); err != nil {
-				//log.Error("save position to etcd err, pos:%+v, err:%+v, start retrySavePos", pos, err)
+				global.Logger.Error("save position to etcd err, pos:%+v, err:%+v, start retrySavePos", pos, err)
 				if err := c.retrySavePos(pos); err != nil {
-					//log.Error("SyncClient retrySavePos err:%+v", err)
+					global.Logger.Error("SyncClient retrySavePos err:%+v", err)
 					return
 				}
 
@@ -305,7 +304,7 @@ func (c *SyncClient) retrySavePos(pos mysql.Position) error {
 			if err = c.master.Save(pos); err == nil {
 				return nil
 			} else {
-				//log.Error("save position to etcd err, pos:%+v, max_retry:%+v, cnt:%+v, err:%+v, try save after 5 seconds", pos, max_retry, cnt, err)
+				global.Logger.Error("save position to etcd err, pos:%+v, max_retry:%+v, cnt:%+v, err:%+v, try save after 5 seconds", pos, max_retry, cnt, err)
 			}
 			cnt++
 		case <-c.ctx.Done():

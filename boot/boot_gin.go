@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"datariver/app/api"
+	"datariver/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +21,7 @@ func HandleTimeLoger(c *gin.Context) {
 }
 
 func StartGinServer() error {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(HandleTimeLoger)
 	//router.RegisterLoggerInfo(ginLogger)
@@ -31,7 +33,7 @@ func StartGinServer() error {
 	}
 
 	go func() {
-		router.Run(GConfig.BrokerConfig.RPCListen)
+		router.Run(config.GConfig.BrokerConfig.RPCListen)
 	}()
 
 	return nil

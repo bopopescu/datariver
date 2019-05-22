@@ -4,13 +4,14 @@ go 1.12
 
 require (
 	common v0.0.0
+	github.com/Shopify/sarama v1.22.1
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8 // indirect
 	github.com/etcd-io/gofail v0.0.0-20180808172546-51ce9a71510a // indirect
 	github.com/gin-gonic/gin v1.4.0
+	github.com/gogf/gf v1.6.13
 	github.com/gogo/protobuf v1.2.1 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
 	github.com/jmoiron/sqlx v1.2.0 // indirect
 	github.com/juju/errors v0.0.0-20190207033735-e65537c515d7 // indirect
 	github.com/juju/loggo v0.0.0-20190212223446-d976af380377 // indirect

@@ -17,8 +17,8 @@
     "BrokerConfig":{
         "LogDir":"./log/",
         "LogFile":"binlogbroker.log",
-        "EtcdAddr":["http://112.124.199.135:2379"],
-        "KafkaAddr":["47.110.164.227:9092", "47.110.164.227:9093", "47.110.164.227:9094"],
+        "EtcdAddr":["http://etcd.infra.svc.cluster.local:2379"],
+        "KafkaAddr":["dsync-kafka.app.svc.cluster.local:9092", "dsync-kafka.app.svc.cluster.local:9093", "dsync-kafka.app.svc.cluster.local:9094"],
         "RPCListen":":8846"
     }
 }

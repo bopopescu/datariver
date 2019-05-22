@@ -10,6 +10,10 @@ func InitAll() error {
 		return errors.Wrap(err, "启动配置失败")
 	}
 
+	err = InitLogger()
+	if err != nil {
+		return errors.Wrap(err, "启动日志失败")
+	}
 	err = StartGinServer()
 	if err != nil {
 		return errors.Wrap(err, "启动GIN服务失败")

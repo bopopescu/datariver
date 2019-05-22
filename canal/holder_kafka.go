@@ -8,6 +8,7 @@ import (
 
 	"github.com/Shopify/sarama"
 
+	dconfig "datariver/config"
 	"datariver/global"
 )
 
@@ -32,6 +33,7 @@ func InitQueue(addr []string) error {
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	//config.Producer.Flush.MaxMessages = 1
 	config.Producer.Return.Successes = true
+	config.ClientID = global.SERVERNAME + "-" + dconfig.GConfig.BrokerConfig.Group
 
 	defaultQueue = KafKaQueue{Addr: addr}
 	var err error

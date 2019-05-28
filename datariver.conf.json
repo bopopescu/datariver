@@ -15,7 +15,7 @@
         ]
     },
     "BrokerConfig":{
-        "LogDir":"/var/log/medlinker/datariver",
+        "LogDir":"./log",
         "LogFile":"binlogbroker.log",
         "EtcdAddr":["http://etcd.infra.svc.cluster.local:2379"],
         "KafkaAddr":["dsync-kafka.app.svc.cluster.local:9092", "dsync-kafka.app.svc.cluster.local:9093", "dsync-kafka.app.svc.cluster.local:9094"],

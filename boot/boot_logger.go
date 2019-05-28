@@ -1,29 +1,22 @@
 package boot
 
 import (
-	"github.com/gogf/gf/g/os/glog"
-	"github.com/pkg/errors"
-
-	"datariver/config"
-	"datariver/global"
-)
-
-/*
-import (
-	//"math"
+	"fmt"
+	"math"
 
 	"github.com/op/go-logging"
-	"github.com/gogf/gf/g/os/glog"
-	//"github.com/pkg/errors"
+	"github.com/pkg/errors"
 
+	"common/futil"
 	"datariver/config"
 	"datariver/global"
 )
 
-var log_format string = ""
+var log_format string = "%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}"
 
-func InitLogger(path string) error {
+func InitLogger() error {
 	fpath := config.GConfig.BrokerConfig.LogDir + "/" + config.GConfig.BrokerConfig.LogFile
+	fmt.Println("路径: ", fpath)
 	fp, err := futil.NewFileLogWriter(fpath, false, math.MaxInt64)
 	if err != nil {
 		return errors.Wrap(err, "日志文件创建错误")
@@ -36,22 +29,13 @@ func InitLogger(path string) error {
 	level.SetLevel(logging.INFO, "")
 
 	logging.SetBackend(level)
-	global.Logger = logging.MustGetLogger(global.SERVERNAME)
-	global.Logger.ExtraCalldepth += 1
-
-	return nil
-}
-*/
-
-func InitLogger() error {
-	logger := glog.New()
-	err := logger.SetPath(config.GConfig.BrokerConfig.LogDir)
-	if err != nil {
-		return errors.Wrap(err, "设置日志目录")
+	l := logging.MustGetLogger(global.SERVERNAME)
+	global.Logger = &global.GoLoggingLogger{
+		Backend: level,
+		Logger:  l,
 	}
-	logger.SetStdPrint(true)
-
-	global.Logger = logger
+	//global.Logger.ExtraCalldepth += 1
+	global.Logger.Infof("初始化日志成功")
 
 	return nil
 }

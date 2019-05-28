@@ -62,9 +62,9 @@ func hack_string(b []byte) (s string) {
 
 func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 	rule, ok := h.c.getFilterInfo(e.Table.Schema, e.Table.Name)
-	global.Logger.Debug("%+v %+v.%+v", e.Action, e.Table.Schema, e.Table.Name)
+	global.Logger.Debugf("%+v %+v.%+v", e.Action, e.Table.Schema, e.Table.Name)
 	if !ok {
-		global.Logger.Debug("%+v.%+v filtered, continue", e.Table.Schema, e.Table.Name)
+		global.Logger.Debugf("%+v.%+v filtered, continue", e.Table.Schema, e.Table.Name)
 		return nil
 	}
 	data := EventData{}
@@ -97,7 +97,7 @@ func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 	}
 	data.Owner = *rule
 	data.Rows = e.Rows
-	global.Logger.Debug("data:%+v", data)
+	global.Logger.Debugf("data:%+v", data)
 	h.c.syncCh <- data
 	return nil
 }

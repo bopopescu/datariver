@@ -26,7 +26,7 @@ type KafKaQueue struct {
 }
 
 func InitQueue(addr []string) error {
-	global.Logger.Info("Begin Queue Init addr:%+v", addr)
+	global.Logger.Infof("Begin Queue Init addr:%+v", addr)
 	config := sarama.NewConfig()
 	config.Producer.Retry.Max = 2
 	config.Version = sarama.V2_1_0_0
@@ -39,7 +39,7 @@ func InitQueue(addr []string) error {
 	var err error
 	if defaultQueue.Producer, err =
 		sarama.NewSyncProducer(defaultQueue.Addr, config); err != nil {
-		global.Logger.Error("Queue Init Failed addr:%+v, err:%+v", addr, err)
+		global.Logger.Errorf("Queue Init Failed addr:%+v, err:%+v", addr, err)
 	}
 	global.Logger.Info("Queue Init End addr:%+v, err:%+v", addr, err)
 	return err

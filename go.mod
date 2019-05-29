@@ -10,7 +10,6 @@ require (
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8 // indirect
 	github.com/etcd-io/gofail v0.0.0-20180808172546-51ce9a71510a // indirect
 	github.com/gin-gonic/gin v1.4.0
-	github.com/gogf/gf v1.6.13
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/jmoiron/sqlx v1.2.0 // indirect
 	github.com/juju/errors v0.0.0-20190207033735-e65537c515d7 // indirect

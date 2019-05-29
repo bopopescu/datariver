@@ -53,7 +53,7 @@ func (obj LeaseInfo) Init(client *clientv3.Client, ttl int) error {
 	obj.LeaseId = lease_resp.ID
 	ka_rsp, err = obj.Lease.KeepAlive(ctx, obj.LeaseId)
 	if err != nil {
-		err = errors.Wrap(err, "set keep alive alive")
+		err = errors.Wrap(err, "set keep alive")
 		goto INIT_FAIL
 	}
 
@@ -84,7 +84,6 @@ func (obj *Dlock) Init(endpoint []string, key string, ttl int, name string) erro
 	obj.Ttl = ttl
 	obj.NodeName = name
 
-	// todo: 初始化client
 	var err error = nil
 	obj.client, err = clientv3.New(clientv3.Config{
 		Endpoints:   endpoint,
@@ -94,10 +93,7 @@ func (obj *Dlock) Init(endpoint []string, key string, ttl int, name string) erro
 		return errors.Wrap(err, "初始化etcd-client失败")
 	}
 
-	fmt.Println("初始化: ", obj.client)
 	obj.kv = clientv3.NewKV(obj.client)
-	fmt.Println("------------")
-	fmt.Println(obj.kv)
 
 	return err
 }
@@ -110,8 +106,6 @@ func (obj *Dlock) Lock() error {
 	obj.Lease = &LeaseInfo{}
 	obj.Lease.Init(obj.client, obj.Ttl)
 
-	fmt.Println(obj)
-	fmt.Println("-> ", obj.kv)
 	txn := obj.kv.Txn(context.TODO())
 	txn.If(clientv3.Compare(clientv3.CreateRevision(obj.LockKeyName), "=", 0)).
 		Then(clientv3.OpPut(obj.LockKeyName, obj.NodeName,
@@ -153,13 +147,12 @@ func listenLeaseChan(leaseRespChan <-chan *clientv3.LeaseKeepAliveResponse) {
 		select {
 		case leaseKeepResp = <-leaseRespChan:
 			if leaseKeepResp == nil {
-				fmt.Println("心跳结束")
 				goto END
 			} else {
-				//fmt.Println("保活: ", leaseKeepResp.ID, " -> ", time.Now())
+				// heart beat
+				// do nothing
 			}
 		}
-		//fmt.Println("for loop")
 	}
 END:
 	fmt.Println("心跳退出")

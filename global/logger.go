@@ -3,10 +3,10 @@ package global
 import (
 	"github.com/op/go-logging"
 
-	"common/model"
+	"common/cmodel"
 )
 
-var Logger model.Logger = nil
+var Logger cmodel.Logger = nil
 
 type GoLoggingLogger struct {
 	Backend logging.LeveledBackend

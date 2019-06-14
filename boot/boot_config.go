@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"datariver/config"
 	"datariver/lib/global"
 )
 
@@ -27,14 +26,14 @@ func init_server_nanme() {
 func Init() error {
 	init_server_nanme()
 
-	flag.StringVar(&config.GConfig.BrokerConfig.Group, "g", "",
+	flag.StringVar(&global.GConfig.BrokerConfig.Group, "g", "",
 		"this parameter is must, group name like mysql instance, ex: db_mall")
 	flag.StringVar(&g_conf_etcd, "etcd", "", "etcd addr")
 	flag.StringVar(&g_conf_file, "c", "", "json file config")
 
 	flag.Parse()
 
-	if config.GConfig.BrokerConfig.Group == "" {
+	if global.GConfig.BrokerConfig.Group == "" {
 		return errors.New("必须提供broker group")
 	}
 
@@ -43,8 +42,8 @@ func Init() error {
 		return errors.Wrap(err, "解析配置失败")
 	}
 
-	if len(config.GConfig.BrokerConfig.EtcdAddr) != 0 {
-		if err := init_busi_etcd_client(config.GConfig.BrokerConfig.EtcdAddr...); err != nil {
+	if len(global.GConfig.BrokerConfig.EtcdAddr) != 0 {
+		if err := init_busi_etcd_client(global.GConfig.BrokerConfig.EtcdAddr...); err != nil {
 			return errors.Wrap(err, "初始化业务etcd-client失败")
 		}
 	}
@@ -52,7 +51,7 @@ func Init() error {
 	return nil
 }
 
-func getConfig(config_file string, config *config.ServerConfig) error {
+func getConfig(config_file string, config *global.ServerConfig) error {
 	file, err := os.Open(config_file)
 	if err != nil {
 		return errors.Wrap(err, "打开文件错误")
@@ -111,11 +110,11 @@ func parseConfig() error {
 
 LoadConfig:
 	//init config
-	err = getConfig(g_conf_file, &config.GConfig)
+	err = getConfig(g_conf_file, &global.GConfig)
 	if err != nil {
 		return errors.Wrap(err, "解析配置失败")
 	}
-	err = parseDSN(config.GConfig.SourceConfig.MysqlConn, &config.GConfig.SourceConfig)
+	err = parseDSN(global.GConfig.SourceConfig.MysqlConn, &global.GConfig.SourceConfig)
 	if err != nil {
 		err = errors.Wrap(err, "解析DSN配置失败")
 	}
@@ -124,21 +123,21 @@ LoadConfig:
 LoadEtcdConfig:
 	key := global.SERVERNAME
 	for loop := true; loop; loop = false {
-		if err = GetConfigFromEtcd(global.SERVERNAME, &config.GConfig.BrokerConfig); err != nil {
+		if err = GetConfigFromEtcd(global.SERVERNAME, &global.GConfig.BrokerConfig); err != nil {
 			err = errors.Wrap(err, "从etcd读取broker配置异常")
 			break
 		}
-		key = fmt.Sprintf("%v:%v", global.SERVERNAME, config.GConfig.BrokerConfig.Group)
-		if err = GetConfigFromEtcd(key, &config.GConfig.SourceConfig); err != nil {
+		key = fmt.Sprintf("%v:%v", global.SERVERNAME, global.GConfig.BrokerConfig.Group)
+		if err = GetConfigFromEtcd(key, &global.GConfig.SourceConfig); err != nil {
 			err = errors.Wrap(err, "从etcd读取source配置异常")
 			break
 		}
 
-		if config.GConfig.SourceConfig.MysqlConn == "" {
+		if global.GConfig.SourceConfig.MysqlConn == "" {
 			err = errors.New("MySQL配置为空")
 			break
 		}
-		err = parseDSN(config.GConfig.SourceConfig.MysqlConn, &config.GConfig.SourceConfig)
+		err = parseDSN(global.GConfig.SourceConfig.MysqlConn, &global.GConfig.SourceConfig)
 		if err != nil {
 			err = errors.Wrap(err, "解析DSN异常")
 		}
@@ -148,7 +147,7 @@ LoadEtcdConfig:
 }
 
 //admin_root:bjfmg1nSsynKggb@tcp(timeline:3306) -> DSN
-func parseDSN(dsn string, cfg *config.SourceConfig) error {
+func parseDSN(dsn string, cfg *global.SourceConfig) error {
 	var err error = nil
 	var left string = dsn
 	for loop := true; loop; loop = false {

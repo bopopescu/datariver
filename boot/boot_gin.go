@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"datariver/app/api"
-	"datariver/config"
+	"datariver/lib/global"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +33,7 @@ func StartGinServer() error {
 	}
 
 	go func() {
-		router.Run(config.GConfig.BrokerConfig.RPCListen)
+		router.Run(global.GConfig.BrokerConfig.RPCListen)
 	}()
 
 	return nil

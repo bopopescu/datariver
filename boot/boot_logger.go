@@ -8,14 +8,13 @@ import (
 	"github.com/pkg/errors"
 
 	"common/futil"
-	"datariver/config"
 	"datariver/lib/global"
 )
 
 var log_format string = "%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}"
 
 func InitLogger() error {
-	fpath := config.GConfig.BrokerConfig.LogDir + "/" + config.GConfig.BrokerConfig.LogFile
+	fpath := global.GConfig.BrokerConfig.LogDir + "/" + global.GConfig.BrokerConfig.LogFile
 	fmt.Println("路径: ", fpath)
 	fp, err := futil.NewFileLogWriter(fpath, false, math.MaxInt64)
 	if err != nil {

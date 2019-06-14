@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"datariver/canal"
-	"datariver/config"
+	"datariver/lib/global"
 )
 
 type DataSyncServer struct {
@@ -14,7 +14,7 @@ type DataSyncServer struct {
 func (p *DataSyncServer) SwitchToMaster() error {
 	// todo: 启动同步逻辑
 	var err error
-	p.Broker, err = canal.NewSyncClient(&config.GConfig)
+	p.Broker, err = canal.NewSyncClient(&global.GConfig)
 	if err != nil {
 		fmt.Println(err.Error())
 	} else {

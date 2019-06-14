@@ -1,6 +1,4 @@
-package config
-
-import ()
+package global
 
 var GConfig ServerConfig = ServerConfig{}
 

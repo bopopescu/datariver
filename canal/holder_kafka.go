@@ -8,7 +8,6 @@ import (
 
 	"github.com/Shopify/sarama"
 
-	dconfig "datariver/config"
 	"datariver/lib/global"
 )
 
@@ -27,18 +26,18 @@ type KafKaQueue struct {
 
 func InitQueue(addr []string) error {
 	global.Logger.Infof("Begin Queue Init addr:%+v", addr)
-	config := sarama.NewConfig()
-	config.Producer.Retry.Max = 2
-	config.Version = sarama.V2_1_0_0
-	config.Producer.RequiredAcks = sarama.WaitForLocal
-	//config.Producer.Flush.MaxMessages = 1
-	config.Producer.Return.Successes = true
-	config.ClientID = global.SERVERNAME + "-" + dconfig.GConfig.BrokerConfig.Group
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 2
+	cfg.Version = sarama.V2_1_0_0
+	cfg.Producer.RequiredAcks = sarama.WaitForLocal
+	//cfg.Producer.Flush.MaxMessages = 1
+	cfg.Producer.Return.Successes = true
+	cfg.ClientID = global.SERVERNAME + "-" + global.GConfig.BrokerConfig.Group
 
 	defaultQueue = KafKaQueue{Addr: addr}
 	var err error
 	if defaultQueue.Producer, err =
-		sarama.NewSyncProducer(defaultQueue.Addr, config); err != nil {
+		sarama.NewSyncProducer(defaultQueue.Addr, cfg); err != nil {
 		global.Logger.Errorf("Queue Init Failed addr:%+v, err:%+v", addr, err)
 	}
 	global.Logger.Info("Queue Init End addr:%+v, err:%+v", addr, err)

@@ -16,7 +16,6 @@ import (
 	"github.com/siddontang/go-mysql/mysql"
 
 	"common/ha"
-	"datariver/config"
 	"datariver/lib/global"
 )
 
@@ -29,7 +28,7 @@ var server_id uint32
 
 type SyncClient struct {
 	sync.RWMutex
-	cfg           *config.ServerConfig
+	cfg           *global.ServerConfig
 	canal         *canal.Canal
 	rules         map[string]*TopicInfo
 	ctx           context.Context
@@ -49,7 +48,7 @@ type SyncClient struct {
 	DataHolder    Holder
 }
 
-func NewSyncClient(cfg *config.ServerConfig) (*SyncClient, error) {
+func NewSyncClient(cfg *global.ServerConfig) (*SyncClient, error) {
 	c := new(SyncClient)
 	c.cfg = cfg
 	c.rules = make(map[string]*TopicInfo)
@@ -446,7 +445,7 @@ OutLoop:
 	return err
 }
 
-func (c *SyncClient) genRule(source *config.TopicInfo, schema, table string) (*TopicInfo, error) {
+func (c *SyncClient) genRule(source *global.TopicInfo, schema, table string) (*TopicInfo, error) {
 	var err error
 	rule := &TopicInfo{KeyIndex: default_key_index}
 	rule.Topic, rule.Key = strings.ToLower(source.Topic), strings.ToLower(source.Key)

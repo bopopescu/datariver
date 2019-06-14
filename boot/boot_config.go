@@ -2,13 +2,13 @@ package boot
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 
 	"datariver/lib/global"
@@ -62,9 +62,15 @@ func getConfig(config_file string, config *global.ServerConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "读文件异常")
 	}
-	err = json.Unmarshal(config_str, config)
+	/*
+		err = json.Unmarshal(config_str, config)
+		if err != nil {
+			err = errors.Wrap(err, "json文件格式错误")
+		}
+	*/
+	_, err = toml.Decode(string(config_str), config)
 	if err != nil {
-		err = errors.Wrap(err, "json文件格式错误")
+		err = errors.Wrapf(err, "Decode文件[%s]格式错误", config_file)
 	}
 	return err
 }
@@ -90,8 +96,8 @@ func getServerConfig(c *global.KeysApi, servername string, cfg interface{}) erro
 	if len(rsp.Kvs) == 0 {
 		return errors.New("etcd配置为空")
 	}
-	return json.Unmarshal([]byte(rsp.Kvs[0].Value), cfg)
-
+	_, err = toml.Decode(string(rsp.Kvs[0].Value), cfg)
+	return err
 }
 
 func parseConfig() error {

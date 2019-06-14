@@ -1,0 +1,40 @@
+[BrokerConfig]
+  LogDir = "/var/log/medlinker/datariver-d2d"
+  LogFile = "binlogbroker.log"
+  EtcdAddr = ["http://etcd.infra.svc.cluster.local:2379"]
+  KafkaAddr = ["dsync-kafka-0.dsync-kafka.app.svc.cluster.local:9092", "dsync-kafka-0.dsync-kafka.app.svc.cluster.local:9093", "dsync-kafka-0.dsync-kafka.app.svc.cluster.local:9094"]
+  RPCListen = ":8846"
+
+[SourceConfig]
+  MysqlConn = "user:pwd@tcp(118.31.236.23:3306)"
+  SyncAll = false
+  RebootSeconds = 300
+  [SourceConfig.DBConfig]
+    User = ""
+    Passwd = ""
+    Net = ""
+    Addr = ""
+    DSN = ""
+
+  [[SourceConfig.Sources]]
+    Schema = "med_d2d"
+
+    [[SourceConfig.Sources.Tables]]
+      Table = "medications"
+      Topic = "topic_medications"
+      Key = "id"
+
+    [[SourceConfig.Sources.Tables]]
+      Table = "medication_stores"
+      Topic = "topic_medication_stores"
+      Key = "id"
+
+    [[SourceConfig.Sources.Tables]]
+      Table = "medication_channel_spus"
+      Topic = "topic_medication_channel_spus"
+      Key = "id"
+
+    [[SourceConfig.Sources.Tables]]
+      Table = "medication_channel_skus"
+      Topic = "topic_medication_channel_skus"
+      Key = "id"

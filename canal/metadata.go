@@ -11,7 +11,7 @@ import (
 	"github.com/siddontang/go-mysql/mysql"
 
 	"common/ha"
-	"datariver/global"
+	"datariver/lib/global"
 )
 
 func NewMetaInfo(group string) (*MetaInfo, error) {

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"go.etcd.io/etcd/clientv3"
 
-	"datariver/global"
+	"datariver/lib/global"
 )
 
 var (

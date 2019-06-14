@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"datariver/config"
-	"datariver/global"
+	"datariver/lib/global"
 )
 
 var g_conf_file, g_conf_etcd string

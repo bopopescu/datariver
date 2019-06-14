@@ -9,7 +9,7 @@ import (
 	"github.com/Shopify/sarama"
 
 	dconfig "datariver/config"
-	"datariver/global"
+	"datariver/lib/global"
 )
 
 import ()

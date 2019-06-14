@@ -17,7 +17,7 @@ import (
 
 	"common/ha"
 	"datariver/config"
-	"datariver/global"
+	"datariver/lib/global"
 )
 
 const (

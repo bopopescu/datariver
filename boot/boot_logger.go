@@ -9,7 +9,7 @@ import (
 
 	"common/futil"
 	"datariver/config"
-	"datariver/global"
+	"datariver/lib/global"
 )
 
 var log_format string = "%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}"

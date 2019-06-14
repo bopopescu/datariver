@@ -7,7 +7,7 @@ import (
 	"common/ha"
 	"datariver/app/service"
 	"datariver/config"
-	"datariver/global"
+	"datariver/lib/global"
 
 	"github.com/pkg/errors"
 )

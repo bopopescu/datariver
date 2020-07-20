@@ -15,9 +15,9 @@ import (
 )
 
 func (c *Canal) startSyncer() (*replication.BinlogStreamer, error) {
-	gset := c.master.GTIDSet()
+	gset := c.main.GTIDSet()
 	if gset == nil {
-		pos := c.master.Position()
+		pos := c.main.Position()
 		s, err := c.syncer.StartSync(pos)
 		if err != nil {
 			return nil, errors.Errorf("start sync replication at binlog %v error %v", pos, err)
@@ -49,12 +49,12 @@ func (c *Canal) runSyncBinlog() error {
 			return errors.Trace(err)
 		}
 
-		// Update the delay between the Canal and the Master before the handler hooks are called
+		// Update the delay between the Canal and the Main before the handler hooks are called
 		c.updateReplicationDelay(ev)
 
 		savePos = false
 		force = false
-		pos := c.master.Position()
+		pos := c.main.Position()
 
 		curPos := pos.Pos
 		//next binlog pos
@@ -95,7 +95,7 @@ func (c *Canal) runSyncBinlog() error {
 				return errors.Trace(err)
 			}
 			if e.GSet != nil {
-				c.master.UpdateGTIDSet(e.GSet)
+				c.main.UpdateGTIDSet(e.GSet)
 			}
 		case *replication.MariadbGTIDEvent:
 			// try to save the GTID later
@@ -138,16 +138,16 @@ func (c *Canal) runSyncBinlog() error {
 				}
 			}
 			if savePos && e.GSet != nil {
-				c.master.UpdateGTIDSet(e.GSet)
+				c.main.UpdateGTIDSet(e.GSet)
 			}
 		default:
 			continue
 		}
 
 		if savePos {
-			c.master.Update(pos)
-			c.master.UpdateTimestamp(ev.Header.Timestamp)
-			if err := c.eventHandler.OnPosSynced(pos, c.master.GTIDSet(), force); err != nil {
+			c.main.Update(pos)
+			c.main.UpdateTimestamp(ev.Header.Timestamp)
+			if err := c.eventHandler.OnPosSynced(pos, c.main.GTIDSet(), force); err != nil {
 				return errors.Trace(err)
 			}
 		}
@@ -255,11 +255,11 @@ func (c *Canal) WaitUntilPos(pos mysql.Position, timeout time.Duration) error {
 			if err != nil {
 				return errors.Trace(err)
 			}
-			curPos := c.master.Position()
+			curPos := c.main.Position()
 			if curPos.Compare(pos) >= 0 {
 				return nil
 			} else {
-				log.Debugf("master pos is %v, wait catching %v", curPos, pos)
+				log.Debugf("main pos is %v, wait catching %v", curPos, pos)
 				time.Sleep(100 * time.Millisecond)
 			}
 		}
@@ -268,7 +268,7 @@ func (c *Canal) WaitUntilPos(pos mysql.Position, timeout time.Duration) error {
 	return nil
 }
 
-func (c *Canal) GetMasterPos() (mysql.Position, error) {
+func (c *Canal) GetMainPos() (mysql.Position, error) {
 	rr, err := c.Execute("SHOW MASTER STATUS")
 	if err != nil {
 		return mysql.Position{}, errors.Trace(err)
@@ -280,7 +280,7 @@ func (c *Canal) GetMasterPos() (mysql.Position, error) {
 	return mysql.Position{Name: name, Pos: uint32(pos)}, nil
 }
 
-func (c *Canal) GetMasterGTIDSet() (mysql.GTIDSet, error) {
+func (c *Canal) GetMainGTIDSet() (mysql.GTIDSet, error) {
 	query := ""
 	switch c.cfg.Flavor {
 	case mysql.MariaDBFlavor:
@@ -303,8 +303,8 @@ func (c *Canal) GetMasterGTIDSet() (mysql.GTIDSet, error) {
 	return gset, nil
 }
 
-func (c *Canal) CatchMasterPos(timeout time.Duration) error {
-	pos, err := c.GetMasterPos()
+func (c *Canal) CatchMainPos(timeout time.Duration) error {
+	pos, err := c.GetMainPos()
 	if err != nil {
 		return errors.Trace(err)
 	}

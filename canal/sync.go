@@ -35,7 +35,7 @@ type SyncClient struct {
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
 	wgCfg         sync.WaitGroup
-	master        *MetaInfo
+	main        *MetaInfo
 	MysqlDumpPath string
 	syncCh        chan interface{}
 	roleCh        chan ha.RoleType
@@ -92,8 +92,8 @@ func (r *SyncClient) Close() {
 	r.canal.Close()
 	global.Logger.Info("closing SyncClient canal.Close ")
 
-	r.master.Close()
-	global.Logger.Info("closing SyncClient master.Close ")
+	r.main.Close()
+	global.Logger.Info("closing SyncClient main.Close ")
 	global.Logger.Info("closing SyncClient wg.Wait Begin")
 	r.wg.Wait()
 	global.Logger.Info("closing SyncClient wg.Wait End ")
@@ -111,7 +111,7 @@ func (c *SyncClient) loadPositionInfo() error {
 	sql := fmt.Sprintf(`SHOW MASTER STATUS;`)
 	var err error
 	for loop := true; loop; loop = false {
-		c.master, err = NewMetaInfo(c.cfg.BrokerConfig.Group)
+		c.main, err = NewMetaInfo(c.cfg.BrokerConfig.Group)
 		if err != nil {
 			global.Logger.Info("Get NewMetaInfo with err:%+v, refresh from mysql server:%+v", err, c.cfg.SourceConfig.MysqlConn)
 			res := &mysql.Result{}
@@ -130,19 +130,19 @@ func (c *SyncClient) loadPositionInfo() error {
 				pos.Pos = uint32(t)
 				break
 			}
-			c.master = &MetaInfo{Group: c.cfg.BrokerConfig.Group, MyRole: ha.Master}
-			c.master.Save(pos)
+			c.main = &MetaInfo{Group: c.cfg.BrokerConfig.Group, MyRole: ha.Main}
+			c.main.Save(pos)
 		}
 	}
 
-	global.Logger.Info("[-]SyncClient loadPositionInfo, name:%+v, pos:%+v, err:%+v ", c.master.Name, c.master.Pos, err)
+	global.Logger.Info("[-]SyncClient loadPositionInfo, name:%+v, pos:%+v, err:%+v ", c.main.Name, c.main.Pos, err)
 
 	return err
 }
 
 //按照官方文档需要生产不同的server_id, 但是阿里的mysql即使生成相同的server_id也不会有问题
 //这里以官方为准
-func genMysqlSlaveServerId(group string) uint32 {
+func genMysqlSubordinateServerId(group string) uint32 {
 	b := make([]byte, 32)
 	rand.Read(b)
 	s := base64.StdEncoding.EncodeToString(b)
@@ -163,7 +163,7 @@ func (c *SyncClient) newCanal() error {
 	if server_id > 0 {
 		cfg.ServerID = server_id
 	} else {
-		cfg.ServerID = genMysqlSlaveServerId(c.cfg.BrokerConfig.Group)
+		cfg.ServerID = genMysqlSubordinateServerId(c.cfg.BrokerConfig.Group)
 		server_id = cfg.ServerID
 	}
 
@@ -183,7 +183,7 @@ func (c *SyncClient) Start() error {
 	c.wg.Add(1)
 	go c.syncLoop()
 
-	pos := c.master.Position()
+	pos := c.main.Position()
 	// todo: StartFromGTID
 	if err := c.canal.RunFrom(pos); err != nil {
 		c.errCh <- err
@@ -275,7 +275,7 @@ func (c *SyncClient) syncLoop() {
 			return
 		}
 		if needSavePos {
-			if err := c.master.Save(pos); err != nil {
+			if err := c.main.Save(pos); err != nil {
 				global.Logger.Error("save position to etcd err, pos:%+v, err:%+v, start retrySavePos", pos, err)
 				if err := c.retrySavePos(pos); err != nil {
 					global.Logger.Error("SyncClient retrySavePos err:%+v", err)
@@ -300,7 +300,7 @@ func (c *SyncClient) retrySavePos(pos mysql.Position) error {
 		}
 		select {
 		case <-tick.C:
-			if err = c.master.Save(pos); err == nil {
+			if err = c.main.Save(pos); err == nil {
 				return nil
 			} else {
 				global.Logger.Error("save position to etcd err, pos:%+v, max_retry:%+v, cnt:%+v, err:%+v, try save after 5 seconds", pos, max_retry, cnt, err)

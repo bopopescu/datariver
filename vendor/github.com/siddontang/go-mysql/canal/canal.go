@@ -30,7 +30,7 @@ type Canal struct {
 	cfg *Config
 
 	parser     *parser.Parser
-	master     *masterInfo
+	main     *mainInfo
 	dumper     *dump.Dumper
 	dumped     bool
 	dumpDoneCh chan struct{}
@@ -72,7 +72,7 @@ func NewCanal(cfg *Config) (*Canal, error) {
 	if c.cfg.DiscardNoMetaRowEvent {
 		c.errorTablesGetTime = make(map[string]time.Time)
 	}
-	c.master = &masterInfo{}
+	c.main = &mainInfo{}
 	
 	c.delay = new(uint32)
 
@@ -152,7 +152,7 @@ func (c *Canal) prepareDumper() error {
 	c.dumper.SetCharset(charset)
 
 	c.dumper.SetWhere(c.cfg.Dump.Where)
-	c.dumper.SkipMasterData(c.cfg.Dump.SkipMasterData)
+	c.dumper.SkipMainData(c.cfg.Dump.SkipMainData)
 	c.dumper.SetMaxAllowedPacket(c.cfg.Dump.MaxAllowedPacketMB)
 	c.dumper.SetProtocol(c.cfg.Dump.Protocol)
 	// Use hex blob for mysqldump
@@ -177,7 +177,7 @@ func (c *Canal) GetDelay() uint32 {
 	return atomic.LoadUint32(c.delay)
 }
 
-// Run will first try to dump all data from MySQL master `mysqldump`,
+// Run will first try to dump all data from MySQL main `mysqldump`,
 // then sync from the binlog position in the dump data.
 // It will run forever until meeting an error or Canal closed.
 func (c *Canal) Run() error {
@@ -186,18 +186,18 @@ func (c *Canal) Run() error {
 
 // RunFrom will sync from the binlog position directly, ignore mysqldump.
 func (c *Canal) RunFrom(pos mysql.Position) error {
-	c.master.Update(pos)
+	c.main.Update(pos)
 
 	return c.Run()
 }
 
 func (c *Canal) StartFromGTID(set mysql.GTIDSet) error {
-	c.master.UpdateGTIDSet(set)
+	c.main.UpdateGTIDSet(set)
 
 	return c.Run()
 }
 
-// Dump all data from MySQL master `mysqldump`, ignore sync binlog.
+// Dump all data from MySQL main `mysqldump`, ignore sync binlog.
 func (c *Canal) Dump() error {
 	if c.dumped {
 		return errors.New("the method Dump can't be called twice")
@@ -212,7 +212,7 @@ func (c *Canal) run() error {
 		c.cancel()
 	}()
 
-	c.master.UpdateTimestamp(uint32(time.Now().Unix()))
+	c.main.UpdateTimestamp(uint32(time.Now().Unix()))
 
 	if !c.dumped {
 		c.dumped = true
@@ -246,7 +246,7 @@ func (c *Canal) Close() {
 	c.connLock.Unlock()
 	c.syncer.Close()
 
-	c.eventHandler.OnPosSynced(c.master.Position(), c.master.GTIDSet(), true)
+	c.eventHandler.OnPosSynced(c.main.Position(), c.main.GTIDSet(), true)
 }
 
 func (c *Canal) WaitDumpDone() <-chan struct{} {
@@ -475,13 +475,13 @@ func (c *Canal) Execute(cmd string, args ...interface{}) (rr *mysql.Result, err 
 }
 
 func (c *Canal) SyncedPosition() mysql.Position {
-	return c.master.Position()
+	return c.main.Position()
 }
 
 func (c *Canal) SyncedTimestamp() uint32 {
-	return c.master.timestamp
+	return c.main.timestamp
 }
 
 func (c *Canal) SyncedGTIDSet() mysql.GTIDSet {
-	return c.master.GTIDSet()
+	return c.main.GTIDSet()
 }

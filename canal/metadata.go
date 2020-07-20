@@ -50,9 +50,9 @@ func (p *MetaInfo) Save(pos mysql.Position) error {
 	p.Lock()
 	defer p.Unlock()
 
-	if p.MyRole != ha.Master {
+	if p.MyRole != ha.Main {
 		return errors.New("从不可以写meta信息")
-		return fmt.Errorf("slave server, cannot, save meta info")
+		return fmt.Errorf("subordinate server, cannot, save meta info")
 	}
 	p.Name, p.Pos, p.LastSaveTime = pos.Name, pos.Pos, time.Now()
 	d, err := json.Marshal(p)
@@ -76,6 +76,6 @@ func (p *MetaInfo) Position() mysql.Position {
 func (p *MetaInfo) Close() {
 	pos := p.Position()
 	p.Save(pos)
-	p.MyRole = ha.Slave
+	p.MyRole = ha.Subordinate
 	return
 }

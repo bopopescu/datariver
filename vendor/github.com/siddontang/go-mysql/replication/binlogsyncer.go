@@ -78,7 +78,7 @@ type BinlogSyncerConfig struct {
 	// RecvBufferSize sets the size in bytes of the operating system's receive buffer associated with the connection.
 	RecvBufferSize int
 
-	// master heartbeat period
+	// main heartbeat period
 	HeartbeatPeriod time.Duration
 
 	// read timeout
@@ -196,7 +196,7 @@ func (b *BinlogSyncer) isClosed() bool {
 	}
 }
 
-func (b *BinlogSyncer) registerSlave() error {
+func (b *BinlogSyncer) registerSubordinate() error {
 	if b.c != nil {
 		b.c.Close()
 	}
@@ -208,7 +208,7 @@ func (b *BinlogSyncer) registerSlave() error {
 		addr = fmt.Sprintf("%s:%d", b.cfg.Host, b.cfg.Port)
 	}
 
-	log.Infof("register slave for master server %s", addr)
+	log.Infof("register subordinate for main server %s", addr)
 	var err error
 	b.c, err = client.Connect(addr, b.cfg.User, b.cfg.Password, "", func(c *client.Conn) {
 		c.SetTLSConfig(b.cfg.TLSConfig)
@@ -263,11 +263,11 @@ func (b *BinlogSyncer) registerSlave() error {
 			// necessary checksummed.
 			// That preference is specified below.
 
-			if _, err = b.c.Execute(`SET @master_binlog_checksum='NONE'`); err != nil {
+			if _, err = b.c.Execute(`SET @main_binlog_checksum='NONE'`); err != nil {
 				return errors.Trace(err)
 			}
 
-			// if _, err = b.c.Execute(`SET @master_binlog_checksum=@@global.binlog_checksum`); err != nil {
+			// if _, err = b.c.Execute(`SET @main_binlog_checksum=@@global.binlog_checksum`); err != nil {
 			// 	return errors.Trace(err)
 			// }
 
@@ -276,22 +276,22 @@ func (b *BinlogSyncer) registerSlave() error {
 
 	if b.cfg.Flavor == MariaDBFlavor {
 		// Refer https://github.com/alibaba/canal/wiki/BinlogChange(MariaDB5&10)
-		// Tell the server that we understand GTIDs by setting our slave capability
+		// Tell the server that we understand GTIDs by setting our subordinate capability
 		// to MARIA_SLAVE_CAPABILITY_GTID = 4 (MariaDB >= 10.0.1).
-		if _, err := b.c.Execute("SET @mariadb_slave_capability=4"); err != nil {
-			return errors.Errorf("failed to set @mariadb_slave_capability=4: %v", err)
+		if _, err := b.c.Execute("SET @mariadb_subordinate_capability=4"); err != nil {
+			return errors.Errorf("failed to set @mariadb_subordinate_capability=4: %v", err)
 		}
 	}
 
 	if b.cfg.HeartbeatPeriod > 0 {
-		_, err = b.c.Execute(fmt.Sprintf("SET @master_heartbeat_period=%d;", b.cfg.HeartbeatPeriod))
+		_, err = b.c.Execute(fmt.Sprintf("SET @main_heartbeat_period=%d;", b.cfg.HeartbeatPeriod))
 		if err != nil {
-			log.Errorf("failed to set @master_heartbeat_period=%d, err: %v", b.cfg.HeartbeatPeriod, err)
+			log.Errorf("failed to set @main_heartbeat_period=%d, err: %v", b.cfg.HeartbeatPeriod, err)
 			return errors.Trace(err)
 		}
 	}
 
-	if err = b.writeRegisterSlaveCommand(); err != nil {
+	if err = b.writeRegisterSubordinateCommand(); err != nil {
 		return errors.Trace(err)
 	}
 
@@ -307,18 +307,18 @@ func (b *BinlogSyncer) enableSemiSync() error {
 		return nil
 	}
 
-	if r, err := b.c.Execute("SHOW VARIABLES LIKE 'rpl_semi_sync_master_enabled';"); err != nil {
+	if r, err := b.c.Execute("SHOW VARIABLES LIKE 'rpl_semi_sync_main_enabled';"); err != nil {
 		return errors.Trace(err)
 	} else {
 		s, _ := r.GetString(0, 1)
 		if s != "ON" {
-			log.Errorf("master does not support semi synchronous replication, use no semi-sync")
+			log.Errorf("main does not support semi synchronous replication, use no semi-sync")
 			b.cfg.SemiSyncEnabled = false
 			return nil
 		}
 	}
 
-	_, err := b.c.Execute(`SET @rpl_semi_sync_slave = 1;`)
+	_, err := b.c.Execute(`SET @rpl_semi_sync_subordinate = 1;`)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -331,7 +331,7 @@ func (b *BinlogSyncer) prepare() error {
 		return errors.Trace(ErrSyncClosed)
 	}
 
-	if err := b.registerSlave(); err != nil {
+	if err := b.registerSubordinate(); err != nil {
 		return errors.Trace(err)
 	}
 
@@ -472,26 +472,26 @@ func (b *BinlogSyncer) writeBinlogDumpMariadbGTIDCommand(gset GTIDSet) error {
 
 	startPos := gset.String()
 
-	// Set the slave_connect_state variable before issuing COM_BINLOG_DUMP to
+	// Set the subordinate_connect_state variable before issuing COM_BINLOG_DUMP to
 	// provide the start position in GTID form.
-	query := fmt.Sprintf("SET @slave_connect_state='%s'", startPos)
+	query := fmt.Sprintf("SET @subordinate_connect_state='%s'", startPos)
 
 	if _, err := b.c.Execute(query); err != nil {
-		return errors.Errorf("failed to set @slave_connect_state='%s': %v", startPos, err)
+		return errors.Errorf("failed to set @subordinate_connect_state='%s': %v", startPos, err)
 	}
 
-	// Real slaves set this upon connecting if their gtid_strict_mode option was
+	// Real subordinates set this upon connecting if their gtid_strict_mode option was
 	// enabled. We always use gtid_strict_mode because we need it to make our
 	// internal GTID comparisons safe.
-	if _, err := b.c.Execute("SET @slave_gtid_strict_mode=1"); err != nil {
-		return errors.Errorf("failed to set @slave_gtid_strict_mode=1: %v", err)
+	if _, err := b.c.Execute("SET @subordinate_gtid_strict_mode=1"); err != nil {
+		return errors.Errorf("failed to set @subordinate_gtid_strict_mode=1: %v", err)
 	}
 
-	// Since we use @slave_connect_state, the file and position here are ignored.
+	// Since we use @subordinate_connect_state, the file and position here are ignored.
 	return b.writeBinlogDumpCommand(Position{Name: "", Pos: 0})
 }
 
-// localHostname returns the hostname that register slave would register as.
+// localHostname returns the hostname that register subordinate would register as.
 func (b *BinlogSyncer) localHostname() string {
 	if len(b.cfg.Localhost) == 0 {
 		h, _ := os.Hostname()
@@ -500,12 +500,12 @@ func (b *BinlogSyncer) localHostname() string {
 	return b.cfg.Localhost
 }
 
-func (b *BinlogSyncer) writeRegisterSlaveCommand() error {
+func (b *BinlogSyncer) writeRegisterSubordinateCommand() error {
 	b.c.ResetSequence()
 
 	hostname := b.localHostname()
 
-	// This should be the name of slave host not the host we are connecting to.
+	// This should be the name of subordinate host not the host we are connecting to.
 	data := make([]byte, 4+1+4+1+len(hostname)+1+len(b.cfg.User)+1+len(b.cfg.Password)+2+4+4)
 	pos := 4
 
@@ -515,7 +515,7 @@ func (b *BinlogSyncer) writeRegisterSlaveCommand() error {
 	binary.LittleEndian.PutUint32(data[pos:], b.cfg.ServerID)
 	pos += 4
 
-	// This should be the name of slave hostname not the host we are connecting to.
+	// This should be the name of subordinate hostname not the host we are connecting to.
 	data[pos] = uint8(len(hostname))
 	pos++
 	n := copy(data[pos:], hostname)
@@ -538,7 +538,7 @@ func (b *BinlogSyncer) writeRegisterSlaveCommand() error {
 	binary.LittleEndian.PutUint32(data[pos:], 0)
 	pos += 4
 
-	// master ID, 0 is OK
+	// main ID, 0 is OK
 	binary.LittleEndian.PutUint32(data[pos:], 0)
 
 	return b.c.WritePacket(data)

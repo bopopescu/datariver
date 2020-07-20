@@ -30,9 +30,9 @@ type DumpConfig struct {
 	// If true, discard error msg, else, output to stderr
 	DiscardErr bool `toml:"discard_err"`
 
-	// Set true to skip --master-data if we have no privilege to do
+	// Set true to skip --main-data if we have no privilege to do
 	// 'FLUSH TABLES WITH READ LOCK'
-	SkipMasterData bool `toml:"skip_master_data"`
+	SkipMainData bool `toml:"skip_main_data"`
 
 	// Set to change the default max_allowed_packet size
 	MaxAllowedPacketMB int `toml:"max_allowed_packet_mb"`
@@ -112,7 +112,7 @@ func NewDefaultConfig() *Config {
 
 	c.Dump.ExecutionPath = "mysqldump"
 	c.Dump.DiscardErr = true
-	c.Dump.SkipMasterData = false
+	c.Dump.SkipMainData = false
 
 	return c
 }

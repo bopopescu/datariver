@@ -125,27 +125,27 @@ func (c *Canal) dump() error {
 		return errors.New("mysqldump does not exist")
 	}
 
-	c.master.UpdateTimestamp(uint32(time.Now().Unix()))
+	c.main.UpdateTimestamp(uint32(time.Now().Unix()))
 
 	h := &dumpParseHandler{c: c}
 	// If users call StartFromGTID with empty position to start dumping with gtid,
 	// we record the current gtid position before dump starts.
 	//
 	// See tryDump() to see when dump is skipped.
-	if c.master.GTIDSet() != nil {
-		gset, err := c.GetMasterGTIDSet()
+	if c.main.GTIDSet() != nil {
+		gset, err := c.GetMainGTIDSet()
 		if err != nil {
 			return errors.Trace(err)
 		}
 		h.gset = gset
 	}
 
-	if c.cfg.Dump.SkipMasterData {
-		pos, err := c.GetMasterPos()
+	if c.cfg.Dump.SkipMainData {
+		pos, err := c.GetMainPos()
 		if err != nil {
 			return errors.Trace(err)
 		}
-		log.Infof("skip master data, get current binlog position %v", pos)
+		log.Infof("skip main data, get current binlog position %v", pos)
 		h.name = pos.Name
 		h.pos = uint64(pos.Pos)
 	}
@@ -157,13 +157,13 @@ func (c *Canal) dump() error {
 	}
 
 	pos := mysql.Position{Name: h.name, Pos: uint32(h.pos)}
-	c.master.Update(pos)
-	if err := c.eventHandler.OnPosSynced(pos, c.master.GTIDSet(), true); err != nil {
+	c.main.Update(pos)
+	if err := c.eventHandler.OnPosSynced(pos, c.main.GTIDSet(), true); err != nil {
 		return errors.Trace(err)
 	}
 	var startPos fmt.Stringer = pos
 	if h.gset != nil {
-		c.master.UpdateGTIDSet(h.gset)
+		c.main.UpdateGTIDSet(h.gset)
 		startPos = h.gset
 	}
 	log.Infof("dump MySQL and parse OK, use %0.2f seconds, start binlog replication at %s",
@@ -172,8 +172,8 @@ func (c *Canal) dump() error {
 }
 
 func (c *Canal) tryDump() error {
-	pos := c.master.Position()
-	gset := c.master.GTIDSet()
+	pos := c.main.Position()
+	gset := c.main.GTIDSet()
 	if (len(pos.Name) > 0 && pos.Pos > 0) ||
 		(gset != nil && gset.String() != "") {
 		// we will sync with binlog name and position

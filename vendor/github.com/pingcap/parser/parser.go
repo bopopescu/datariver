@@ -340,7 +340,7 @@ const (
 	lowerThanSetKeyword        = 57863
 	lowerThanStringLitToken    = 57862
 	lsh                        = 57853
-	master                     = 57647
+	main                     = 57647
 	max                        = 57768
 	maxConnectionsPerHour      = 57654
 	maxExecutionTime           = 57769
@@ -472,7 +472,7 @@ const (
 	show                       = 57518
 	signed                     = 57704
 	singleAtIdentifier         = 57349
-	slave                      = 57705
+	subordinate                      = 57705
 	slow                       = 57706
 	smallIntType               = 57519
 	snapshot                   = 57707
@@ -720,7 +720,7 @@ var (
 		57686: 123, // redundant (1000x)
 		57693: 124, // rollback (1000x)
 		57694: 125, // routine (1000x)
-		57705: 126, // slave (1000x)
+		57705: 126, // subordinate (1000x)
 		57716: 127, // source (1000x)
 		57814: 128, // split (1000x)
 		57710: 129, // start (1000x)
@@ -773,7 +773,7 @@ var (
 		57644: 176, // last (999x)
 		57645: 177, // less (999x)
 		57646: 178, // level (999x)
-		57647: 179, // master (999x)
+		57647: 179, // main (999x)
 		57659: 180, // merge (999x)
 		57650: 181, // mode (999x)
 		57662: 182, // national (999x)
@@ -1699,7 +1699,7 @@ var (
 		"redundant",
 		"rollback",
 		"routine",
-		"slave",
+		"subordinate",
 		"source",
 		"split",
 		"start",
@@ -1752,7 +1752,7 @@ var (
 		"last",
 		"less",
 		"level",
-		"master",
+		"main",
 		"merge",
 		"mode",
 		"national",
@@ -12138,7 +12138,7 @@ yynewstate:
 	case 1167:
 		{
 			parser.yyVAL.statement = &ast.ShowStmt{
-				Tp: ast.ShowMasterStatus,
+				Tp: ast.ShowMainStatus,
 			}
 		}
 	case 1168:

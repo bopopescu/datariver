@@ -35,7 +35,7 @@ type Dumper struct {
 
 	ErrOut io.Writer
 
-	masterDataSkipped bool
+	mainDataSkipped bool
 	maxAllowedPacket  int
 	hexBlob           bool
 }
@@ -59,7 +59,7 @@ func NewDumper(executionPath string, addr string, user string, password string) 
 	d.Databases = make([]string, 0, 16)
 	d.Charset = DEFAULT_CHARSET
 	d.IgnoreTables = make(map[string][]string)
-	d.masterDataSkipped = false
+	d.mainDataSkipped = false
 
 	d.ErrOut = os.Stderr
 
@@ -82,9 +82,9 @@ func (d *Dumper) SetErrOut(o io.Writer) {
 	d.ErrOut = o
 }
 
-// SkipMasterData: In some cloud MySQL, we have no privilege to use `--master-data`.
-func (d *Dumper) SkipMasterData(v bool) {
-	d.masterDataSkipped = v
+// SkipMainData: In some cloud MySQL, we have no privilege to use `--main-data`.
+func (d *Dumper) SkipMainData(v bool) {
+	d.mainDataSkipped = v
 }
 
 func (d *Dumper) SetMaxAllowedPacket(i int) {
@@ -139,8 +139,8 @@ func (d *Dumper) Dump(w io.Writer) error {
 	args = append(args, fmt.Sprintf("--user=%s", d.User))
 	args = append(args, fmt.Sprintf("--password=%s", d.Password))
 
-	if !d.masterDataSkipped {
-		args = append(args, "--master-data")
+	if !d.mainDataSkipped {
+		args = append(args, "--main-data")
 	}
 
 	if d.maxAllowedPacket > 0 {
@@ -215,7 +215,7 @@ func (d *Dumper) DumpAndParse(h ParseHandler) error {
 
 	done := make(chan error, 1)
 	go func() {
-		err := Parse(r, h, !d.masterDataSkipped)
+		err := Parse(r, h, !d.mainDataSkipped)
 		r.CloseWithError(err)
 		done <- err
 	}()
